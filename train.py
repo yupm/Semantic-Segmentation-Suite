@@ -35,8 +35,11 @@ parser.add_argument('--validation_step', type=int, default=1, help='How often to
 parser.add_argument('--image', type=str, default=None, help='The image you want to predict on. Only valid in "predict" mode.')
 parser.add_argument('--continue_training', type=str2bool, default=False, help='Whether to continue training from a checkpoint')
 parser.add_argument('--dataset', type=str, default="CamVid", help='Dataset you are using.')
+parser.add_argument('--crop_aug', type=str2bool, default=False, help='Height of cropped input image to network')
 parser.add_argument('--crop_height', type=int, default=512, help='Height of cropped input image to network')
 parser.add_argument('--crop_width', type=int, default=512, help='Width of cropped input image to network')
+parser.add_argument('--resize_height', type=float, default=1.0, help='Height of resized input image to network')
+parser.add_argument('--resize_width', type=float, default=1.0, help='Width of resized input image to network')
 parser.add_argument('--batch_size', type=int, default=1, help='Number of images in each batch')
 parser.add_argument('--num_val_images', type=int, default=20, help='The number of images to used for validations')
 parser.add_argument('--h_flip', type=str2bool, default=False, help='Whether to randomly flip the image horizontally for data augmentation')
@@ -50,7 +53,12 @@ args = parser.parse_args()
 
 def data_augmentation(input_image, output_image):
     # Data augmentation
-    input_image, output_image = utils.random_crop(input_image, output_image, args.crop_height, args.crop_width)
+    
+    input_image = cv2.resize(input_image, (0,0), fx= args.resize_width, fy= args.resize_height) 
+    output_image = cv2.resize(output_image, (0,0), fx= args.resize_width, fy= args.resize_height) 
+
+    if args.crop_aug:
+        input_image, output_image = utils.random_crop(input_image, output_image, args.crop_height, args.crop_width)
 
     if args.h_flip and random.randint(0,1):
         input_image = cv2.flip(input_image, 1)
