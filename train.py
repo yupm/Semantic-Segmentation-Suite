@@ -9,6 +9,11 @@ import random
 import os, sys
 import subprocess
 
+
+from datetime import datetime
+instance_folder =  "checkpoints/" + str(datetime.now().strftime('%Y%m%d%H%M%S'))
+print("Instance saved in", instance_folder)
+
 # use 'Agg' on matplotlib so that plots could be generated even without Xserver
 # running
 import matplotlib
@@ -117,7 +122,7 @@ if init_fn is not None:
     init_fn(sess)
 
 # Load a previous checkpoint if desired
-model_checkpoint_name = "checkpoints/latest_model_" + args.model + "_" + args.dataset + ".ckpt"
+model_checkpoint_name = instance_folder +"/latest_model_" + args.model + "_" + args.dataset + ".ckpt"
 if args.continue_training:
     print('Loaded latest model checkpoint')
     saver.restore(sess, model_checkpoint_name)
@@ -214,8 +219,8 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     avg_loss_per_epoch.append(mean_loss)
 
     # Create directories if needed
-    if not os.path.isdir("%s/%04d"%("checkpoints",epoch)):
-        os.makedirs("%s/%04d"%("checkpoints",epoch))
+    if not os.path.isdir("%s/%04d"%(instance_folder,epoch)):
+        os.makedirs("%s/%04d"%(instance_folder,epoch))
 
     # Save latest checkpoint to same file name
     print("Saving latest checkpoint")
@@ -223,12 +228,12 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
 
     if val_indices != 0 and epoch % args.checkpoint_step == 0:
         print("Saving checkpoint for this epoch")
-        saver.save(sess,"%s/%04d/model.ckpt"%("checkpoints",epoch))
+        saver.save(sess,"%s/%04d/model.ckpt"%(instance_folder,epoch))
 
 
     if epoch % args.validation_step == 0:
         print("Performing validation")
-        target=open("%s/%04d/val_scores.csv"%("checkpoints",epoch),'w')
+        target=open("%s/%04d/val_scores.csv"%(instance_folder,epoch),'w')
         target.write("val_name, avg_accuracy, precision, recall, f1 score, mean iou, %s\n" % (class_names_string))
 
 
@@ -275,8 +280,8 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
 
             file_name = os.path.basename(val_input_names[ind])
             file_name = os.path.splitext(file_name)[0]
-            cv2.imwrite("%s/%04d/%s_pred.png"%("checkpoints",epoch, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
-            cv2.imwrite("%s/%04d/%s_gt.png"%("checkpoints",epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
+            cv2.imwrite("%s/%04d/%s_pred.png"%(instance_folder,epoch, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
+            cv2.imwrite("%s/%04d/%s_gt.png"%(instance_folder,epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
 
         target.close()
@@ -319,7 +324,7 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     ax1.set_ylabel("Avg. val. accuracy")
 
 
-    plt.savefig('accuracy_vs_epochs.png')
+    plt.savefig(instance_folder +'/accuracy_vs_epochs.png')
 
     plt.clf()
 
@@ -330,7 +335,7 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel("Current loss")
 
-    plt.savefig('loss_vs_epochs.png')
+    plt.savefig(instance_folder+'/loss_vs_epochs.png')
 
     plt.clf()
 
@@ -341,7 +346,7 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     ax3.set_xlabel("Epoch")
     ax3.set_ylabel("Current IoU")
 
-    plt.savefig('iou_vs_epochs.png')
+    plt.savefig(instance_folder+'/iou_vs_epochs.png')
 
 
 
