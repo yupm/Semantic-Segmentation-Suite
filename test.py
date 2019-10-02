@@ -6,13 +6,36 @@ import numpy as np
 from utils import utils, helpers
 from builders import model_builder
 
+
+from datetime import datetime
+
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+        
 parser = argparse.ArgumentParser()
 parser.add_argument('--checkpoint_path', type=str, default=None, required=True, help='The path to the latest checkpoint weights for your model.')
 parser.add_argument('--crop_height', type=int, default=512, help='Height of cropped input image to network')
 parser.add_argument('--crop_width', type=int, default=512, help='Width of cropped input image to network')
 parser.add_argument('--model', type=str, default=None, required=True, help='The model you are using')
 parser.add_argument('--dataset', type=str, default="CamVid", required=False, help='The dataset you are using')
+parser.add_argument('--histogram', type=str2bool, default=False, help='Do histgram equalization')
+parser.add_argument('--sharpen', type=str2bool, default=False, help='Sharpen image ')
+
 args = parser.parse_args()
+
+foldername = args.model + str(datetime.now().strftime('%Y%m%d%H%M%S'))
+
+if args.histogram:
+    print("Equalizing Histogram")
+
+if args.sharpen:
+    print("Sharpen image")
 
 # Get the names of the classes so we can record the evaluation results
 print("Retrieving dataset information ...")
@@ -64,8 +87,22 @@ run_times_list = []
 for ind in range(len(test_input_names)):
     sys.stdout.write("\rRunning test image %d / %d"%(ind+1, len(test_input_names)))
     sys.stdout.flush()
+    
+    get_image = utils.load_image(test_input_names[ind])
+    
+    if args.histogram:
+        equ = cv2.equalizeHist(get_image)
+        res = np.hstack((get_image,equ)) 
+        get_image = res
+        
+    if args.sharpen:
+        kernel_sharpening = np.array([[-1,-1,-1], 
+                                      [-1, 9,-1],
+                                      [-1,-1,-1]])
+        sharpened = cv2.filter2D(get_image, -1, kernel_sharpening)
+        get_image = sharpened
 
-    input_image = np.expand_dims(np.float32(utils.load_image(test_input_names[ind])[:args.crop_height, :args.crop_width]),axis=0)/255.0
+    input_image = np.expand_dims(np.float32(get_image[:args.crop_height, :args.crop_width]),axis=0)/255.0
     gt = utils.load_image(test_output_names[ind])[:args.crop_height, :args.crop_width]
     gt = helpers.reverse_one_hot(helpers.one_hot_it(gt, label_values))
 
@@ -95,8 +132,8 @@ for ind in range(len(test_input_names)):
     
     gt = helpers.colour_code_segmentation(gt, label_values)
 
-    cv2.imwrite("%s/%s_pred.png"%("Test", file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
-    cv2.imwrite("%s/%s_gt.png"%("Test", file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
+    cv2.imwrite("%s/%s/%s_pred.png"%("Test", foldername , file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
+    cv2.imwrite("%s/%s/%s_gt.png"%("Test", foldername, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
 
 target.close()
